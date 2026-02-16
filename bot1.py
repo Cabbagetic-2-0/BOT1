@@ -4,9 +4,10 @@ import asyncio
 import time
 import os
 from dotenv import load_dotenv
+load_dotenv()
 
 # --- List of User IDs allowed to use the !purge command ---
-TRUSTED_USERS = [int(i) for i in os.getenv("TRUSTED_USERS").split(",")]
+TRUSTED_USERS = [int(i) for i in os.getenv("TRUSTED_USERS", "").split(",") if i]
 
 # --- Set up the bot with a prefix (e.g., !) and necessary intents ---
 intents = discord.Intents.default()
@@ -108,6 +109,5 @@ async def purge(ctx, amount: int):
 
 
 # --- bot token autofiller and run bot ---
-load_dotenv()
 bot.run(os.getenv('DISCORD_TOKEN'))
 
