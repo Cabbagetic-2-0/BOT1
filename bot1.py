@@ -10,7 +10,7 @@ load_dotenv()
 # Record the exact time the script starts
 start_time = time.time()
 # recognising trusted users from the .env file
-TRUSTED_USERS = [int(i) for i in os.getenv("TRUSTED_USERS", "").split(",") i>
+TRUSTED_USERS = [int(i) for i in os.getenv("TRUSTED_USERS", "").split(",") if i]
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -26,7 +26,7 @@ async def on_ready():
     print(f'✅ Logged in as {bot.user.name}. Ready for action!')
 
 # 2. THE HI LOGIC (Merged & Cleaned)
-# Track the last message content for each channel to prevent "In a row" dupl>
+# Track the last message content for each channel to prevent "In a row" duplicates
 last_message_content = {}
 last_author_id = {}
 
@@ -41,7 +41,7 @@ async def on_message(message):
     author_id = message.author.id  # Get the ID of the person who just typed
 
     if "hi" in words:
-        # NEW RULE: Only delete if the content is "hi" AND it's the same per>
+        # NEW RULE: Only delete if the content is "hi" AND it's the same person
         if (last_message_content.get(channel_id) == "hi" and
             last_author_id.get(channel_id) == author_id):
             try:
@@ -66,6 +66,7 @@ async def on_message(message):
         last_author_id[channel_id] = author_id
 
     await bot.process_commands(message)
+
 
 # 3. COMMANDS
 @bot.command()
@@ -94,7 +95,7 @@ async def purge(ctx, amount: int):
     is_trusted = ctx.author.id in TRUSTED_USERS
 
     if not (is_admin or is_owner or is_trusted):
-        return await ctx.send("❌ You don't have permission!", delete_after=>
+        return await ctx.send("❌ You don't have permission!", delete_after=5)
 
     if amount > 50:
         return await ctx.send("⚠️ Limit is 50 per purge.", delete_after=5)
