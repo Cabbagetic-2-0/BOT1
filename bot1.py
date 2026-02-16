@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 import asyncio
 import time
+import os
+from dotenv import load_dotenv
 
 # --- List of User IDs allowed to use the !purge command ---
 TRUSTED_USERS = [int(i) for i in os.getenv("TRUSTED_USERS").split(",")]
@@ -106,9 +108,6 @@ async def purge(ctx, amount: int):
 
 
 # --- bot token autofiller and run bot ---
-import os
-from dotenv import load_dotenv
-
 load_dotenv()
 bot.run(os.getenv('DISCORD_TOKEN'))
 
