@@ -42,4 +42,4 @@ python bot1.py
 the bot1.py is named according to the main bot1.py file in this repository but if you use different name (e.g. NAME.py, use ```python NAME.py```
 
 # Licence
-This project is licensed under [MIT Licence](https://github.com/Cabbagetic-2-0/BOT1/?tab=MIT-1-ov-file#)
+This project is licensed under the [MIT Licence](https://github.com/Cabbagetic-2-0/BOT1/?tab=MIT-1-ov-file#)
