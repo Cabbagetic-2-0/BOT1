@@ -1,0 +1,10 @@
+# Secrets
+.env
+
+# Python junk
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Termux/System files
+.DS_Store
