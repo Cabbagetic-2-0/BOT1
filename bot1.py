@@ -4,6 +4,7 @@ import asyncio
 import time
 import os
 from dotenv import load_dotenv
+from datetime import timedelta
 
 # 1. SETUP
 load_dotenv()
@@ -82,7 +83,6 @@ async def uptime(ctx):
 
     # Convert seconds into a readable format (Hours, Minutes, Seconds)
     # Using timedelta is the easiest way to format this
-    from datetime import timedelta
     uptime_str = str(timedelta(seconds=uptime_seconds))
 
     await ctx.send(f"🕒 **Uptime:** {uptime_str}")
