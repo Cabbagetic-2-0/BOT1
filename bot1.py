@@ -60,7 +60,7 @@ async def on_ready():
 
 
 # How fast the bot gets hungry (in seconds)
-HUNGER_DECAY_INTERVAL = 300
+HUNGER_DECAY_INTERVAL = 600
 
 # --- Database Setup ---
 async def init_db():
@@ -133,7 +133,7 @@ async def on_message(message):
         # Send the response (Hi -> Hi, Bye -> Bye)
         response = found_word.capitalize()
         if message.author.bot:
-            response += "e" # Makes it "Hii" or "Byee" for bots
+            response += "." # Makes it "Hii" or "Byee" for bots
 
         await message.channel.send(response)
 
