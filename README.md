@@ -1,45 +1,90 @@
-# BOT1
-DISCORD BOT using Python Programming Language. discord.py is used for it
+# BOT1 (New Updates)
+A feature-rich Discord bot built with Python and discord.py, optimized for 24/7 operation on Termux.
 
-# Termux Discord Bot
+## ✨ New Features
+- **🍖 Virtual Pet System:** The bot has a life of its own! It gets hungry over time and loses health if not fed.
+- **📊 Persistent Stats:** Uses aiosqlite to save health and hunger data, so stats aren't lost when the bot restarts.
+- **🔄 Auto-Restart Engine:** Includes a shell script that automatically revives the bot if it crashes or is told to !restart.
+- **💬 Enhanced Social Logic:** Prevents "Hi" and "Bye" spam by detecting duplicates and managing permissions.
+- **🛠️ Admin Suite:** Advanced !purge, !restart, and !stop commands for trusted users.
 
-A lightweight Discord bot designed to run on **Termux (Android)**. Features include a secure purge system, latency check, and a "socially aware" Hi-logic.
-
-## Features
-* **Purge Command:** Clean up chat history (Restricted to Admins and Trusted Users).
-* **Ping Command:** Check the bot's heartbeat latency.
-* **Hi-Logic:** * Automatically warns users if they send "Hi" twice in a row.
-    * Self-destructs the bot's own "Hi" if it accidentally sends two in a row.
-* **Termux Optimized:** Designed to run with low resource usage.
-
-## Setup Instructions
-
-### 1. Prerequisites
-On your Android device, install **Termux** (prefer F-Droid version). Run the following commands:
+## 🛠️ Setup Instructions
+**1. Prerequisites (Termux)**
+Install the necessary packages on your Android device:
 ```bash
 pkg update && pkg upgrade
 pkg install python
-pip install discord.py python-dotenv
+pip install discord.py python-dotenv aiosqlite
 ```
-
-### 2. Configuration (The Secret Step)
-To keep the bot secure, you must create a .env file in the same folder as bot.py. Do not upload this file to GitHub!
-
-Create the file:
+**2. Configuration (.env)**
+Create a .env file to store your secrets securely:
 ```bash
 nano .env
-write this: "DISCORD_TOKEN=YOUR_BOT_TOKEN_HERE
+```
+Paste the following and replace with your actual data:
+```txt
+DISCORD_TOKEN=YOUR_BOT_TOKEN_HERE
 TRUSTED_USERS=YOUR_USER_ID,ANOTHER_USER_ID
-"
-press CTRL + x
-press Y
-press enter
 ```
-### 3 Running the bot
-```bash
-python bot1.py
-```
-the bot1.py is named according to the main bot1.py file in this repository but if you use different name (e.g. NAME.py, use ```python NAME.py```
+_**to save any files created by nano, press**_ `ctrl+x`, _**press**_ `Y`, _**press**_ `enter`
 
-# Licence
-This project is licensed under the [MIT Licence](https://github.com/Cabbagetic-2-0/BOT1/?tab=MIT-1-ov-file#)
+**3. Creating the Auto-Restart Script (start.sh)**
+This script acts as a "bodyguard" to keep your bot running.
+1. Create the file:
+```bash
+nano start.sh
+```
+2. Paste this logic:
+```bash
+#!/bin/bash
+while true
+do
+    echo "Starting Bot..."
+    python bot1.py
+    status=$?
+    if [ $status -eq 0 ]; then
+        echo "✅ Bot stopped manually. Goodbye!"
+        break
+    else
+        echo "🔄 Restarting in 3 seconds..."
+        sleep 3
+    fi
+done
+```
+_**to save any files created by nano, press**_ `ctrl+x`, _**press**_ `Y`, _**press**_ `enter`
+
+
+3. **Crucial step:** Give Termux permission to run this script:
+```bash
+chmod +x start.sh
+```
+
+## 🚀 Running the Bot
+Instead of running the python file directly, use the starter script:
+```bash
+./start.sh
+```
+
+## 🎮 New Commands
+
+Command         -        Description
+----------------------------------------
+!help           -        Shows the custom, categorized help menu.
+----------------------------------------
+!status         -        Displays the bot's current Health and Hunger levels.
+----------------------------------------
+!feed [food]    -        Increases hunger and heals the bot.
+----------------------------------------
+!uptime         -        Shows how long the bot has been online.
+----------------------------------------
+!restart        -        Closes the bot and triggers an immediate restart.
+----------------------------------------
+!stop           -        Completely shuts down the bot and the restart loop.
+----------------------------------------
+
+### To Do
+- [ ] Add ghost of bot when it reaches 0 health
+- [ ] Make logic for ghost of bot so it would not respond to any commands even if it's online (except revive command)
+- [ ] Add revive command
+- [ ] Add battery command
+- [ ] Add XP system
