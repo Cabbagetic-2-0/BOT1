@@ -1,13 +1,13 @@
-import discord
-from discord.ext import commands, tasks
 import aiosqlite
 import asyncio
-import time
-import sys
+import discord
 import os
-from dotenv import load_dotenv
+import subprocess
+import sys
+import time
 from datetime import timedelta
-
+from discord.ext import commands, tasks
+from dotenv import load_dotenv
 
 # 1. SETUP & STARTUP
 load_dotenv()
@@ -257,7 +257,7 @@ async def help(ctx):
     # Category 3: Utility
     embed.add_field(
         name="🛠️ Utility",
-        value="• `!ping`: Check my speed(latency).\n• `!uptime`: See how long I've been awake.\n• `!purge <num>`: Clear messages (Admin only).\n• `!restart`: Restart me (Admin only).",
+        value="• `!ping`: Check my speed(latency).\n• `!uptime`: See how long I've been awake.\n• `!purge <num>`: Clear messages (Admin only).\n• `!restart`: Restart me (Admin only).\n• `!stop`: Shutdown me (Admin only).",
         inline=False
     )
 
@@ -274,6 +274,25 @@ async def stop(ctx):
     await bot.close()
     # Exit with code 0 to tell the bash script to "break" the loop
     os._exit(0)
+
+
+@bot.command()
+async def battery(ctx):
+    try:
+        # Full Termux path (since you're using proot-distro)
+        result = subprocess.check_output(
+            ["/data/data/com.termux/files/usr/bin/termux-battery-status"]
+        )
+
+        output = result.decode("utf-8")
+
+        # Send full raw output inside a code block
+        await ctx.send(f"```json\n{output}\n```")
+
+    except Exception as e:
+        await ctx.send("❌ Failed to read battery info.")
+        print("Battery command error:", e)
+
 
 # 4. RUN
 bot.run(os.getenv('DISCORD_TOKEN'))
