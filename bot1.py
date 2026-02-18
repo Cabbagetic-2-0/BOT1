@@ -257,7 +257,7 @@ async def help(ctx):
     # Category 3: Utility
     embed.add_field(
         name="🛠️ Utility",
-        value="• `!ping`: Check my speed(latency).\n• `!uptime`: See how long I've been awake.\n• `!purge <num>`: Clear messages (Admin only).\n• `!restart`: Restart me (Admin only).\n• `!stop`: Shutdown me (Admin only).",
+        value="• `!ping`: Check my speed(latency).\n• `!uptime`: See how long I've been awake.\n• `!battery`: Shows current battery status of the host device.\n• `!purge <num>`: Clear messages (Admin only).\n• `!restart`: Restart me (Admin only).\n• `!stop`: Shutdown me (Admin only).",
         inline=False
     )
 
