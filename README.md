@@ -24,7 +24,7 @@ nano .env
 Paste the following and replace with your actual data:
 ```txt
 DISCORD_TOKEN=YOUR_BOT_TOKEN_HERE
-TRUSTED_USERS=YOUR_USER_ID,ANOTHER_USER_ID
+TRUSTED_USERS=YOUR_USER_ID, ANOTHER_USER_ID
 ```
 _**to save any files created by nano, press**_ `ctrl+x`, _**press**_ `Y`, _**press**_ `enter`
 
