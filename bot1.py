@@ -26,7 +26,7 @@ async def update_bot_status(hunger_level):
         status_text = "Happy & Full! | !ping"
         activity_type = discord.ActivityType.playing
     elif hunger_level < 20:
-        status_text = "Starving... | !ping"
+        status_text = "Starving... | !feed 🍕"
         activity_type = discord.ActivityType.playing
     else:
         status_text = "for 'Hi' | !ping"
@@ -108,6 +108,7 @@ last_author_id = {}
 
 @bot.event
 async def on_message(message):
+    # Rule 1: Always ignore yourself
     if message.author == bot.user:
         return
 
@@ -116,12 +117,17 @@ async def on_message(message):
     channel_id = message.channel.id
     author_id = message.author.id
 
-    # --- Combined Hi and Bye Logic ---
+    # --- Greeting Logic ---
     target_words = ["hi", "bye"]
     found_word = next((w for w in target_words if w in words), None)
 
     if found_word:
-        # Check if it's a duplicate from the same person
+        # NEW RULE: If the author is a bot, don't reply!
+        # This stops BotA, BotB, and BotC from triggering each other.
+        if message.author.bot:
+            return
+
+        # Check for human duplicates (same person saying Hi twice)
         if (last_message_content.get(channel_id) == found_word and
             last_author_id.get(channel_id) == author_id):
             try:
@@ -130,24 +136,18 @@ async def on_message(message):
                 pass
             return
 
-        # Send the response (Hi -> Hi, Bye -> Bye)
-        response = found_word.capitalize()
-        if message.author.bot:
-            response += "." # Makes it "Hii" or "Byee" for bots
-
-        await message.channel.send(response)
+        # Send response (This will now ONLY be to humans)
+        await message.channel.send(found_word.capitalize())
 
         # Update trackers
         last_message_content[channel_id] = found_word
         last_author_id[channel_id] = author_id
 
     else:
-        # Reset trackers ONLY if it's not a command and not a target word
-        if not content.startswith('!'):
-            last_message_content[channel_id] = content
-            last_author_id[channel_id] = author_id
+        if not (content.startswith(':!') or content.startswith('!')):
+            last_message_content[channel_id] = None
+            last_author_id[channel_id] = None
 
-    # IMPORTANT: Only ONE process_commands at the very end
     await bot.process_commands(message)
 
 

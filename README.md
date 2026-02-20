@@ -51,7 +51,7 @@ do
     fi
 done
 ```
-_**to save any files created by nano, press**_ `ctrl+x`, _**press**_ `Y`, _**press**_ `enter`
+_**to save any files created by nano, press**_ `ctrl+x`_, **press**_ `Y`_, **press**_ `enter`
 
 
 3. **Crucial step:** Give Termux permission to run this script:
@@ -94,3 +94,4 @@ Command         -        Description
 - [ ] Add revive command
 - [x] Add battery command
 - [ ] Add XP system
+- [x] Remove bot to bot Hi and Bye logic (due to prevent unsatisfaction)

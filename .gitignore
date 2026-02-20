@@ -8,3 +8,6 @@ __pycache__/
 
 # Termux/System files
 .DS_Store
+
+# Database
+*.db
