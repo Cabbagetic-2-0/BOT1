@@ -68,25 +68,25 @@ Instead of running the python file directly, use the starter script:
 ## 🎮 All Commands
 
 Command         -        Description
-----------------------------------------
+---------------------------------------------------
 !help           -        Shows the custom, categorized help menu.
-----------------------------------------
+---------------------------------------------------
 !status         -        Displays the bot's current Health and Hunger levels.
-----------------------------------------
+---------------------------------------------------
 !feed [food]    -        Increases hunger and heals the bot.
-----------------------------------------
+---------------------------------------------------
 !uptime         -        Shows how long the bot has been online.
-----------------------------------------
+---------------------------------------------------
 !ping           -        Shows latency
-----------------------------------------
+---------------------------------------------------
 !purge [amount] -        Deletes message(s)
-----------------------------------------
+---------------------------------------------------
 !battery        -        Shows the battery status using termux-battery-status command (termux-api) • this command only works when this bot is run by termux app on Android
-----------------------------------------
+---------------------------------------------------
 !restart        -        Closes the bot and triggers an immediate restart.
-----------------------------------------
+---------------------------------------------------
 !stop           -        Completely shuts down the bot and the restart loop.
-----------------------------------------
+---------------------------------------------------
 
 ### To Do
 - [ ] Add ghost of bot when it reaches 0 health
