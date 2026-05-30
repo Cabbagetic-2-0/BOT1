@@ -81,7 +81,8 @@ Command         -        Description
 ---------------------------------------------------
 !purge [amount] -        Deletes message(s)
 ---------------------------------------------------
-!battery        -        Shows the battery status using termux-battery-status command (termux-api) • this command only works when this bot is run by termux app on Android
+!battery        -        Shows the battery status using termux-battery-status command.
+[you must need to have installed both termux-api { *the cli, `pkg install termux-api`* } and the Termux:API app { *install this app from the same official source where you got your current Termux app. (for example, if you've installed the [Termux app](https://github.com/termux/termux-app/releases/latest) from the Termux GitHub organisation, install the [Termux:API](https://github.com/termux/termux-api/releases/latest) app from the same Termux GitHub organisation.)* }] • this command only works when this bot is run by Termux app on Android
 ---------------------------------------------------
 !restart        -        Closes the bot and triggers an immediate restart.
 ---------------------------------------------------
