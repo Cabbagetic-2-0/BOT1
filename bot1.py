@@ -12,14 +12,16 @@ from dotenv import load_dotenv
 
 # 1. SETUP & STARTUP
 load_dotenv()
-# Record the exact time the script starts
 start_time = time.time()
-# Recognising trusted users from the .env file
 TRUSTED_USERS = [int(i) for i in os.getenv("TRUSTED_USERS", "").split(",") if i]
+
+# Automatically fetch prefix from .env. If not found, default to '!' for public use.
+BOT_PREFIX = os.getenv("COMMAND_PREFIX", "!")
 
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
+# Configuring the bot prefix dynamically from the environment file
+bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents, help_command=None)
 
 # How fast the bot gets hungry (in seconds)
 HUNGER_DECAY_INTERVAL = 300
@@ -40,7 +42,6 @@ async def get_bot_status():
                 return {"health": res[0], "hunger": res[1], "is_ghost": res[2]}
     return {"health": 100, "hunger": 100, "is_ghost": 0}
 
-
 async def update_bot_status(hunger_level, health=None, is_ghost=None):
     """Updates the bot's database stats via aiosqlite AND changes its Discord status text."""
     async with aiosqlite.connect("bot_stats.db") as db:
@@ -54,32 +55,30 @@ async def update_bot_status(hunger_level, health=None, is_ghost=None):
                     if health is None: health = 100
                     if is_ghost is None: is_ghost = 0
 
-        # Update the database asynchronously
         await db.execute(
             "UPDATE bot_stats SET health=?, hunger=?, is_ghost=? WHERE id = 1", 
             (health, hunger_level, is_ghost)
         )
         await db.commit()
 
-    # Change Discord Rich Presence text based on hunger/status
+    # Change Discord Rich Presence text based on status
     if is_ghost == 1:
-        status_text = "Spooking the server... 👻 | !revive"
+        status_text = f"Spooking the server... 👻 | {BOT_PREFIX}revive"
         activity_type = discord.ActivityType.playing
     elif hunger_level > 80:
-        status_text = "Happy & Full! | !ping"
+        status_text = f"Happy & Full! | {BOT_PREFIX}ping"
         activity_type = discord.ActivityType.playing
     elif hunger_level < 20:
-        status_text = "Starving... | !feed 🍕"
+        status_text = f"Starving... | {BOT_PREFIX}feed 🍕"
         activity_type = discord.ActivityType.playing
     else:
-        status_text = "for 'Hi' | !ping"
+        status_text = f"for 'Hi' | {BOT_PREFIX}ping"
         activity_type = discord.ActivityType.watching
 
     await bot.change_presence(activity=discord.Activity(type=activity_type, name=status_text))
 
-
 async def add_user_xp(user_id, xp_to_add):
-    """Grants XP to users dynamically using an async database connection loop."""
+    """Grants XP to users dynamically using an async database loop."""
     async with aiosqlite.connect("bot_stats.db") as db:
         async with db.execute("SELECT xp, level FROM user_xp WHERE user_id = ?", (user_id,)) as cursor:
             res = await cursor.fetchone()
@@ -87,12 +86,11 @@ async def add_user_xp(user_id, xp_to_add):
         if not res:
             await db.execute("INSERT INTO user_xp (user_id, xp, level) VALUES (?, ?, ?)", (user_id, xp_to_add, 1))
             await db.commit()
-            return False  # Did not level up
+            return False 
             
         current_xp = res[0] + xp_to_add
         current_level = res[1]
         
-        # Level up formula: 100 XP per level
         xp_needed = current_level * 100
         leveled_up = False
         
@@ -124,11 +122,9 @@ async def init_db():
             await db.execute("INSERT INTO bot_stats (id, health, hunger, is_ghost) VALUES (1, 100, 100, 0)")
         await db.commit()
 
-
 @bot.event
 async def on_ready():
     async with aiosqlite.connect("bot_stats.db") as db:
-        # Create the user_xp table if your users don't have it yet
         await db.execute('''
             CREATE TABLE IF NOT EXISTS user_xp (
                 user_id INTEGER PRIMARY KEY, 
@@ -136,26 +132,21 @@ async def on_ready():
                 level INTEGER DEFAULT 1
             )
         ''')
-        
         try:
             await db.execute("ALTER TABLE bot_stats ADD COLUMN is_ghost BOOLEAN DEFAULT 0")
             print("✅ Successfully injected 'is_ghost' column into database!")
         except aiosqlite.OperationalError:
-            pass  # Already exists
-            
+            pass
         await db.commit()
     print("✨ Database schemas verified and updated automatically!")
     
-    # Initialize base table data
     await init_db()
 
-    # Start the background hunger timer
     if not hunger_decay.is_running():
         hunger_decay.start()
 
     print(f'✅ Logged in as {bot.user.name}. Everything is loaded and ready for action!')
 
-    # Set status immediately based on current stats
     async with aiosqlite.connect("bot_stats.db") as db:
         async with db.execute("SELECT hunger, is_ghost FROM bot_stats WHERE id = 1") as cursor:
             row = await cursor.fetchone()
@@ -163,37 +154,30 @@ async def on_ready():
                 await update_bot_status(row[0], is_ghost=row[1])
 
 
-# --- 🔄 BACKGROUND LOOP TASKS 🔄 ---
-
+# --- Background Task: Decay Hunger/Health ---
 @tasks.loop(seconds=HUNGER_DECAY_INTERVAL)
 async def hunger_decay():
     async with aiosqlite.connect("bot_stats.db") as db:
-        # Check if it's already a ghost; ghosts shouldn't take further decay damage
         async with db.execute("SELECT is_ghost FROM bot_stats WHERE id = 1") as cursor:
             status = await cursor.fetchone()
             if status and status[0] == 1:
                 return
 
-        # Reduce hunger
         await db.execute("UPDATE bot_stats SET hunger = MAX(0, hunger - 10) WHERE id = 1")
 
-        # Get the new hunger values to process status updates and checks
         async with db.execute("SELECT hunger, health FROM bot_stats WHERE id = 1") as cursor:
             row = await cursor.fetchone()
             new_hunger = row[0]
             current_health = row[1]
 
-        # If starving, take damage
         if new_hunger < 20:
             current_health = max(0, current_health - 5)
             await db.execute("UPDATE bot_stats SET health = ? WHERE id = 1", (current_health,))
 
         await db.commit()
 
-    # Automatically update presence changes
     await update_bot_status(new_hunger, health=current_health)
     
-    # Check if the decay caused a death state
     if current_health <= 0 or new_hunger <= 0:
         await check_for_death()
 
@@ -202,14 +186,14 @@ async def check_for_death():
     stats = await get_bot_status()
     if stats["health"] <= 0 or stats["hunger"] <= 0:
         await update_bot_status(hunger_level=0, health=0, is_ghost=1)
-
+        
         for guild in bot.guilds:
             try:
                 await guild.me.edit(nick=f"Ghost 👻 of {bot.user.name}")
                 if guild.system_channel:
-                    await guild.system_channel.send("💔 **DIED...** The bot has succumbed to its conditions and turned into a ghost! Only `iRevive` can bring it back.")
+                    await guild.system_channel.send(f"💔 **DIED...** The bot has succumbed to its conditions and turned into a ghost! Only `{BOT_PREFIX}revive` can bring it back.")
             except Exception as e:
-                print(f"Error executing death protocol for guild {guild.id}: {e}")
+                print(f"Error handling death actions in guild {guild.id}: {e}")
 
 
 # --- 💬 CENTRALIZED MESSAGE CONTROLLER 💬 ---
@@ -224,13 +208,11 @@ async def on_message(message):
 
     # ❌ EMERGENCY GHOST WALL ❌
     if stats["is_ghost"]:
-        # Only process the command if it is explicitly the Revive command
         if content.lower().startswith(f"{bot.command_prefix}revive"):
             await bot.process_commands(message)
         return
 
-    # ⭐ ALIVE: RUN SYSTEM MESSAGE FEATURES ⭐
-    # 1. XP Gain System
+    # ⭐ ALIVE: RUN CONTEXT SYSTEM FEATURES ⭐
     did_level_up = await add_user_xp(message.author.id, 5)
     if did_level_up:
         async with aiosqlite.connect("bot_stats.db") as db:
@@ -239,7 +221,6 @@ async def on_message(message):
                 new_lvl = row[0] if row else 1
         await message.channel.send(f"🎉 Gg {message.author.mention}, you leveled up to **Level {new_lvl}**!")
 
-    # 2. Social Greeting Checks
     words = content.lower().split()
     channel_id = message.channel.id
     author_id = message.author.id
@@ -257,31 +238,31 @@ async def on_message(message):
             except discord.Forbidden:
                 pass
             return
-                
+
         await message.channel.send(found_word.capitalize())
         last_message_content[channel_id] = found_word
         last_author_id[channel_id] = author_id
     else:
-        if not (content.lower().startswith('!?') or content.lower().startswith('!')):
+        if not content.lower().startswith(bot.command_prefix.lower()):
             last_message_content[channel_id] = None
             last_author_id[channel_id] = None
 
     await bot.process_commands(message)
 
 
-# --- 🧪 BOT COMMANDS 🧪 ---
+# --- 🧪 BOT COMMANDS (With automatic Case-Insensitivity) 🧪 ---
 
-@bot.command()
+@bot.command(name="ping", aliases=["Ping"])
 async def ping(ctx):
     latency = round(bot.latency * 1000)
     await ctx.send(f'🏓 Pong! Latency: {latency}ms')
 
-@bot.command()
+@bot.command(name="uptime", aliases=["Uptime"])
 async def uptime(ctx):
     uptime_seconds = int(round(time.time() - start_time))
     await ctx.send(f"🕒 **Uptime:** {str(timedelta(seconds=uptime_seconds))}")
 
-@bot.command()
+@bot.command(name="purge", aliases=["Purge"])
 async def purge(ctx, amount: int):
     if not (ctx.author.guild_permissions.administrator or ctx.author.id in TRUSTED_USERS):
         return await ctx.send("❌ You don't have permission!", delete_after=5)
@@ -290,7 +271,7 @@ async def purge(ctx, amount: int):
     deleted = await ctx.channel.purge(limit=amount + 1)
     await ctx.send(f'✅ Deleted {len(deleted)-1} messages.', delete_after=5)
 
-@bot.command()
+@bot.command(name="status", aliases=["Status"])
 async def status(ctx):
     """Checks the bot's current health and hunger."""
     stats = await get_bot_status()
@@ -302,7 +283,7 @@ async def status(ctx):
     embed.add_field(name=f"{f} Hunger", value=f"{stats['hunger']}/100")
     await ctx.send(embed=embed)
 
-@bot.command()
+@bot.command(name="feed", aliases=["Feed"])
 async def feed(ctx, item: str):
     """Feed the bot to increase hunger and heal it."""
     stats = await get_bot_status()
@@ -314,7 +295,7 @@ async def feed(ctx, item: str):
     await update_bot_status(hunger_level=new_hunger, health=new_health, is_ghost=0)
     await ctx.send(f"You fed the bot a {item}! It feels much better :D")
 
-@bot.command()
+@bot.command(name="restart", aliases=["Restart"])
 async def restart(ctx):
     if ctx.author.id not in TRUSTED_USERS:
         return await ctx.send("❌ Only admins can restart the bot.")
@@ -322,7 +303,7 @@ async def restart(ctx):
     await bot.close()
     os._exit(1)
 
-@bot.command()
+@bot.command(name="stop", aliases=["Stop"])
 async def stop(ctx):
     if ctx.author.id not in TRUSTED_USERS:
         return await ctx.send("❌ Only admins can restart the bot.")
@@ -330,7 +311,7 @@ async def stop(ctx):
     await bot.close()
     os._exit(0)
 
-@bot.command()
+@bot.command(name="battery", aliases=["Battery"])
 async def battery(ctx):
     try:
         result = subprocess.check_output(["/data/data/com.termux/files/usr/bin/termux-battery-status"])
@@ -338,7 +319,7 @@ async def battery(ctx):
     except Exception as e:
         await ctx.send("❌ Failed to read battery info.")
 
-@bot.command()
+@bot.command(name="revive", aliases=["Revive"])
 async def revive(ctx):
     stats = await get_bot_status()
     if stats["is_ghost"] == 1:
@@ -347,18 +328,19 @@ async def revive(ctx):
             await ctx.guild.me.edit(nick=bot.user.name) 
         except Exception as e:
             print(f"Couldn't change nickname: {e}")
-        await ctx.send("✨ **HEALED!** I have returned from the spirit world. My health is at 10💔 and my hunger is at 20🍗. Feed me quick!")
+        await ctx.send(f"✨ **HEALED!** I have returned from the spirit world. My health is at 10💔 and my hunger is at 20🍗. Feed me quick!")
     else:
         await ctx.send(f"❤️ I'm still alive and kicking! Current Health: {stats['health']}")
 
-@bot.command()
+@bot.command(name="help", aliases=["Help"])
 async def help(ctx):
     embed = discord.Embed(title="🤖 Bot Command Menu", description="Here is everything I can do!", color=discord.Color.yellow())
-    embed.add_field(name="💬 Social", value="• Say **Hi** or **Bye**\n• Tracks user text XP leveling!", inline=False)
-    embed.add_field(name="🍖 Pet System", value="• `!status`: Check health/hunger.\n• `!feed <food>`: Give me a snack!\n• `!revive`: Break out of ghost mode 👻", inline=False)
-    embed.add_field(name="🛠️ Utility", value="• `!ping`: Latency.\n• `!uptime`: Online length.\n• `!battery`: Host device status.\n• `!purge / !restart / !stop`: Admin commands.", inline=False)
+    embed.add_field(name="💬 Social", value=f"• Say **Hi** or **Bye**\n• Tracks user text XP leveling!", inline=False)
+    embed.add_field(name="🍖 Pet System", value=f"• `{BOT_PREFIX}status`: Check health/hunger.\n• `{BOT_PREFIX}feed <food>`: Give me a snack!\n• `{BOT_PREFIX}revive`: Break out of ghost mode 👻", inline=False)
+    embed.add_field(name="🛠️ Utility", value=f"• `{BOT_PREFIX}ping`: Latency.\n• `{BOT_PREFIX}uptime`: Online length.\n• `{BOT_PREFIX}battery`: Host device status.\n• `{BOT_PREFIX}purge / {BOT_PREFIX}restart / {BOT_PREFIX}stop`: Admin commands.", inline=False)
     embed.set_footer(text="Requested by " + ctx.author.name)
     await ctx.send(embed=embed)
 
 # 4. RUN
 bot.run(os.getenv('DISCORD_TOKEN'))
+            
