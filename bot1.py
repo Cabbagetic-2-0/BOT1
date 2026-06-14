@@ -23,7 +23,7 @@ intents.message_content = True
 bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents, help_command=None)
 
 # How fast the bot gets hungry (in seconds)
-HUNGER_DECAY_INTERVAL = 300
+HUNGER_DECAY_INTERVAL = 1800
 
 # Track the last message content for each channel to prevent "In a row" duplicates
 last_message_content = {}
