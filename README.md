@@ -1,98 +1,127 @@
-# BOT1 (New Updates)
-A feature-rich Discord bot built with Python and discord.py, optimized for 24/7 operation on Termux.
+## BOT1 (Virtual Pet & Utility Suite)
+A feature-rich Discord pet and utility bot built with Python and discord.py, natively optimized for 24/7 operation inside Termux on Android devices.
 
-## ✨ New Features
-- **🍖 Virtual Pet System:** The bot has a life of its own! It gets hungry over time and loses health if not fed.
-- **📊 Persistent Stats:** Uses aiosqlite to save health and hunger data, so stats aren't lost when the bot restarts.
-- **🔄 Auto-Restart Engine:** Includes a shell script that automatically revives the bot if it crashes or is told to !restart.
-- **💬 Enhanced Social Logic:** Prevents "Hi" and "Bye" spam by detecting duplicates and managing permissions.
-- **🛠️ Admin Suite:** Advanced !purge, !restart, and !stop commands for trusted users.
+## ✨ Key Features
 
-## 🛠️ Setup Instructions
-**1. Prerequisites (Termux)**
-Install the necessary packages on your Android device:
+- **🍖 Advanced Virtual Pet Engine:** The bot lives right in your server! It experiences continuous hunger decay and takes physical health damage if left starving.
+- **👻 Ghost State & Emergency Wall:** If health or hunger drops to zero, the bot transitions into a Ghost state. Its nickname changes, its presence alters, and it activates an emergency command wall that blocks all functionality except for a spiritual revival.
+- **⭐ Automated XP Tracking:** Active chatters earn 5 XP per message. Features integrated mathematical calculations to handle level-ups seamlessly with real-time level confirmations directly back to the channel.
+- **📊 Thread-Safe Persistent Database:** Built with asynchronous `aiosqlite` schema layers to securely handle server actions without causing database locks or halting runtime functions.
+- **💬 Intelligent Social Filtration:** Automatically responds to greetings like "Hi" and "Bye" for human members, blocks recursive bot-to-bot greeting loops, and auto-purges rapid-fire user message duplication.
+- **🛠️ Dynamic Prefix Environment Configuration:** Programmed to automatically pick up configuration traits from your environment `.env` file. Supports cross-case functionality seamlessly for lowercase/uppercase parsing matching standard styles natively.
+- **🔄 Fault-Tolerant Auto-Restart Loop:** Accompanied by a dedicated bash shell supervisor to auto-heal runtime loops or perform rapid core restarts upon administrative command calls.
+
+---
+
+## 🛠️ Installation & Setup Instructions
+
+### 1. Prerequisites (Termux setup)
+Update your platform and install Python alongside dependencies tailored for database execution:
 ```bash
 pkg update && pkg upgrade
 pkg install python
 pip install discord.py python-dotenv aiosqlite
 ```
-**2. Configuration (.env)**
-Create a .env file to store your secrets securely:
+
+### 2. Configuration (`.env`)
+Create an environment variable configuration file to store your credentials securely:
 ```bash
 nano .env
 ```
-Paste the following and replace with your actual data:
+
+Paste the configuration grid and adjust variables according to your active environment:
 ```txt
 DISCORD_TOKEN=YOUR_BOT_TOKEN_HERE
 TRUSTED_USERS=YOUR_USER_ID, ANOTHER_USER_ID
+COMMAND_PREFIX=!
 ```
-_**to save any files created by nano, press**_ `ctrl+x`, _**press**_ `Y`, _**press**_ `enter`
 
-**3. Creating the Auto-Restart Script (start.sh)**
-This script acts as a "bodyguard" to keep your bot running.
-1. Create the file:
+**Tip:** _To save files modified using nano, press_ `Ctrl + X`, _press_ `Y` _and confirm with_ `Enter`_._
+
+### 3. Creating the Auto-Restart Script (`start.sh`)
+This bash wrapper acts as a supervisor to keep your execution environment running seamlessly.
+1. Create the runtime file:
 ```bash
 nano start.sh
 ```
-2. Paste this logic:
+2. Insert the following operational control structure (ensure your main file matches the specified runtime name, e.g. `bot1.py`):
 ```bash
 #!/bin/bash
 while true
 do
-    echo "Starting Bot..."
+    echo "Starting Bot Execution Flow..."
     python bot1.py
     status=$?
     if [ $status -eq 0 ]; then
-        echo "✅ Bot stopped manually. Goodbye!"
+        echo "✅ Bot stopped manually via exit code 0. Goodbye!"
         break
     else
-        echo "🔄 Restarting in 3 seconds..."
+        echo "🔄 Runtime crashed or triggered restart. Re-spinning in 3 seconds..."
         sleep 3
     fi
 done
 ```
-_**to save any files created by nano, press**_ `ctrl+x`_, **press**_ `Y`_, **press**_ `enter`
 
+**Tip:** _To save files modified using nano, press_ `Ctrl + X`, _press_ `Y` _and confirm with_ `Enter`_._
 
-3. **Crucial step:** Give Termux permission to run this script:
+3. Inject executable context permissions into your shell wrapper before starting:
 ```bash
 chmod +x start.sh
 ```
 
-## 🚀 Running the Bot
-Instead of running the python file directly, use the starter script:
+## 🚀 Deployment Execution
+Instead of calling the Python runtime engine directly, pass terminal controls to the auto-supervisor layer:
 ```bash
 ./start.sh
 ```
 
-## 🎮 All Commands
+## 🎮 Command Index
+All commands naturally adhere to your specified context variables configured inside the .env container file (e.g. !command).
 
-Command         -        Description
----------------------------------------------------
-!help           -        Shows the custom, categorized help menu.
----------------------------------------------------
-!status         -        Displays the bot's current Health and Hunger levels.
----------------------------------------------------
-!feed [food]    -        Increases hunger and heals the bot.
----------------------------------------------------
-!uptime         -        Shows how long the bot has been online.
----------------------------------------------------
-!ping           -        Shows latency
----------------------------------------------------
-!purge [amount] -        Deletes message(s)
----------------------------------------------------
-!battery        -        Shows the battery status using termux-battery-status command.
-[you must need to have installed both termux-api { *the cli, `pkg install termux-api`* } and the Termux:API app { *install this app from the same official source where you got your current Termux app. (for example, if you've installed the [Termux app](https://github.com/termux/termux-app/releases/latest) from the Termux GitHub organisation, install the [Termux:API](https://github.com/termux/termux-api/releases/latest) app from the same Termux GitHub organisation.)* }] • this command only works when this bot is run by Termux app on Android
----------------------------------------------------
-!restart        -        Closes the bot and triggers an immediate restart.
----------------------------------------------------
-!stop           -        Completely shuts down the bot and the restart loop.
----------------------------------------------------
+Command         →        Description
 
-### To Do
-- [ ] Add ghost of bot when it reaches 0 health
-- [ ] Make logic for ghost of bot so it would not respond to any commands even if it's online (except revive command)
-- [ ] Add revive command
-- [x] Add battery command
-- [ ] Add XP system
-- [x] Remove bot to bot Hi and Bye logic (due to prevent unsatisfaction)
+---
+`help`           →       Renders a clean menu detailing active systems, variables, and categories.
+
+---
+`revive`         →       Restores life structures if the pet enters a ghost state.
+
+---
+`status`         →       Checks structural parameters including health and hunger metrics.
+
+---
+`feed [food]`    →       Satisfies hunger metrics and incrementally restores health metrics.
+
+---
+`uptime`         →       Tracks processing metrics down to hours/minutes/seconds.
+
+---
+`ping`           →       Pulls latency intervals from the API gateway engine.
+
+---
+`purge [amount]` →       Cleans channel backlogs instantly up to a 50-message cap.
+
+---
+`battery`        →       Interfaces with `/usr/bin/termux-battery-status` for local host info.
+
+---
+`restart`        →       Safely cuts thread connections and flags the shell script to reboot.
+
+---
+`stop`           →       Safely drops active connection points and completely shuts down loops.
+
+---
+
+**🔋 Note on Battery Command:** Requires both cli, the native terminal package, (`pkg install termux-api`) and the corresponding Termux:API system app to be cleanly installed on the target device.
+**Example:** _if you have installed you current_ [Termux App](https://github.com/termux/termux-app/releases/latest) _from the official Termux GitHub, you should have installed the_ [Termux:API](https://github.com/termux/termux-api/releases/latest) _App from their official GitHub as well._
+
+## 📝 Roadmap & Completed Tasks
+- [x] Integrate safe background thread management via asynchronous tasks.
+- [x] Prevent bot-to-bot conversational loops and user spam strings.
+- [x] Inject low-level architecture modules to evaluate Termux system properties.
+- [x] Construct dynamic table queries using a thread-safe persistent SQL database layout.
+- [x] Build out specialized state transitions handling structural damage and fatal pet death cycles.
+- [x] Build an Emergency Ghost isolation shield blocking standard interactive command runs.
+- [x] Program spiritual retrieval mechanics (`revive`) updating active roles and nicknames on-the-fly.
+- [x] Implement mathematical XP progression tracking and persistent text rank mechanics.
+- [ ] Implement integrated inventory items and an analytical economy structure.
