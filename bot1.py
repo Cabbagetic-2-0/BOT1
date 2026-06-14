@@ -15,12 +15,11 @@ load_dotenv()
 start_time = time.time()
 TRUSTED_USERS = [int(i) for i in os.getenv("TRUSTED_USERS", "").split(",") if i]
 
-# Automatically fetch prefix from .env. If not found, default to '!' for public use.
+# Dynamically pull the prefix from the .env file. Defaults to '!' if missing.
 BOT_PREFIX = os.getenv("COMMAND_PREFIX", "!")
 
 intents = discord.Intents.default()
 intents.message_content = True
-# Configuring the bot prefix dynamically from the environment file
 bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents, help_command=None)
 
 # How fast the bot gets hungry (in seconds)
@@ -39,18 +38,27 @@ async def get_bot_status():
         async with db.execute("SELECT health, hunger, is_ghost FROM bot_stats WHERE id = 1") as cursor:
             res = await cursor.fetchone()
             if res:
-                return {"health": res[0], "hunger": res[1], "is_ghost": res[2]}
+                # Provide a fallback to 100 or 0 if any individual column is None
+                return {
+                    "health": res[0] if res[0] is not None else 100, 
+                    "hunger": res[1] if res[1] is not None else 100, 
+                    "is_ghost": res[2] if res[2] is not None else 0
+                }
     return {"health": 100, "hunger": 100, "is_ghost": 0}
 
 async def update_bot_status(hunger_level, health=None, is_ghost=None):
     """Updates the bot's database stats via aiosqlite AND changes its Discord status text."""
+    # Safety Check: If hunger_level itself comes back as None, default to 100
+    if hunger_level is None:
+        hunger_level = 100
+
     async with aiosqlite.connect("bot_stats.db") as db:
         if health is None or is_ghost is None:
             async with db.execute("SELECT health, is_ghost FROM bot_stats WHERE id = 1") as cursor:
                 row = await cursor.fetchone()
                 if row:
-                    if health is None: health = row[0]
-                    if is_ghost is None: is_ghost = row[1]
+                    if health is None: health = row[0] if row[0] is not None else 100
+                    if is_ghost is None: is_ghost = row[1] if row[1] is not None else 0
                 else:
                     if health is None: health = 100
                     if is_ghost is None: is_ghost = 0
@@ -61,7 +69,7 @@ async def update_bot_status(hunger_level, health=None, is_ghost=None):
         )
         await db.commit()
 
-    # Change Discord Rich Presence text based on status
+    # 2. Change Discord Rich Presence text based on status safely
     if is_ghost == 1:
         status_text = f"Spooking the server... 👻 | {BOT_PREFIX}revive"
         activity_type = discord.ActivityType.playing
@@ -88,8 +96,8 @@ async def add_user_xp(user_id, xp_to_add):
             await db.commit()
             return False 
             
-        current_xp = res[0] + xp_to_add
-        current_level = res[1]
+        current_xp = (res[0] if res[0] is not None else 0) + xp_to_add
+        current_level = res[1] if res[1] is not None else 1
         
         xp_needed = current_level * 100
         leveled_up = False
@@ -124,6 +132,8 @@ async def init_db():
 
 @bot.event
 async def on_ready():
+    await init_db()
+    
     async with aiosqlite.connect("bot_stats.db") as db:
         await db.execute('''
             CREATE TABLE IF NOT EXISTS user_xp (
@@ -139,19 +149,22 @@ async def on_ready():
             pass
         await db.commit()
     print("✨ Database schemas verified and updated automatically!")
-    
-    await init_db()
 
     if not hunger_decay.is_running():
         hunger_decay.start()
 
     print(f'✅ Logged in as {bot.user.name}. Everything is loaded and ready for action!')
 
+    # Safety-focused pull directly on initialization
     async with aiosqlite.connect("bot_stats.db") as db:
         async with db.execute("SELECT hunger, is_ghost FROM bot_stats WHERE id = 1") as cursor:
             row = await cursor.fetchone()
             if row:
-                await update_bot_status(row[0], is_ghost=row[1])
+                fallback_hunger = row[0] if row[0] is not None else 100
+                fallback_ghost = row[1] if row[1] is not None else 0
+                await update_bot_status(fallback_hunger, is_ghost=fallback_ghost)
+            else:
+                await update_bot_status(100, health=100, is_ghost=0)
 
 
 # --- Background Task: Decay Hunger/Health ---
@@ -167,8 +180,9 @@ async def hunger_decay():
 
         async with db.execute("SELECT hunger, health FROM bot_stats WHERE id = 1") as cursor:
             row = await cursor.fetchone()
-            new_hunger = row[0]
-            current_health = row[1]
+            # Absolute safety fallbacks to prevent NoneType errors
+            new_hunger = row[0] if (row and row[0] is not None) else 100
+            current_health = row[1] if (row and row[1] is not None) else 100
 
         if new_hunger < 20:
             current_health = max(0, current_health - 5)
@@ -208,7 +222,7 @@ async def on_message(message):
 
     # ❌ EMERGENCY GHOST WALL ❌
     if stats["is_ghost"]:
-        if content.lower().startswith(f"{bot.command_prefix}revive"):
+        if content.lower().startswith(f"{bot.command_prefix.lower()}revive"):
             await bot.process_commands(message)
         return
 
@@ -250,7 +264,7 @@ async def on_message(message):
     await bot.process_commands(message)
 
 
-# --- 🧪 BOT COMMANDS (With automatic Case-Insensitivity) 🧪 ---
+# --- 🧪 BOT COMMANDS (With automatic Case-Insensitivity via aliases) 🧪 ---
 
 @bot.command(name="ping", aliases=["Ping"])
 async def ping(ctx):
@@ -343,4 +357,4 @@ async def help(ctx):
 
 # 4. RUN
 bot.run(os.getenv('DISCORD_TOKEN'))
-            
+                                        
