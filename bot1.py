@@ -337,14 +337,19 @@ async def battery(ctx):
 async def revive(ctx):
     stats = await get_bot_status()
     if stats["is_ghost"] == 1:
+        # 1. Update the database state to alive
         await update_bot_status(hunger_level=20, health=10, is_ghost=0)
-        try:
-            await ctx.guild.me.edit(nick=bot.user.name) 
-        except Exception as e:
-            print(f"Couldn't change nickname: {e}")
-        await ctx.send(f"✨ **HEALED!** I have returned from the spirit world. My health is at 10💔 and my hunger is at 20🍗. Feed me quick!")
+        
+        # 2. Loop through EVERY server the bot is in and restore its name!
+        for guild in bot.guilds:
+            try:
+                await guild.me.edit(nick=bot.user.name)
+            except Exception as e:
+                print(f"Couldn't change nickname back in guild {guild.id}: {e}")
+                
+        await ctx.send("✨ **HEALED GLOBAL ACTION!** I have returned from the spirit world. My life has been restored across all servers! My health is at 10💔 and my hunger is at 20🍗. Feed me quick!")
     else:
-        await ctx.send(f"❤️ I'm still alive and kicking! Current Health: {stats['health']}")
+        await ctx.send(f"❤️ I'm still alive and kicking! Current Health: {stats['health']}/100")
 
 @bot.command(name="help", aliases=["Help"])
 async def help(ctx):
