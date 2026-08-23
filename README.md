@@ -6,7 +6,7 @@ A feature-rich Discord pet and utility bot built with Python and discord.py, nat
 - **🍖 Advanced Virtual Pet Engine:** The bot lives right in your server! It experiences continuous hunger decay and takes physical health damage if left starving.
 - **👻 Ghost State & Emergency Wall:** If health or hunger drops to zero, the bot transitions into a Ghost state. Its nickname changes, its presence alters, and it activates an emergency command wall that blocks all functionality except for a spiritual revival.
 - **⭐ Automated XP Tracking:** Active chatters earn 5 XP per message. Features integrated mathematical calculations to handle level-ups seamlessly with real-time level confirmations directly back to the channel.
-- **📈 Rich Embed Formatting For Level & Level Status Boards:** The level stats and level status boards render cleanly in Discord embeds with gold/purple accents, ranking numbers (`#1`, `#2`, `#3`).
+- **📈 Rich Embed Formatting For XP Profile & Level Status Boards:** The XP profile and level status boards render cleanly in Discord embeds with gold/purple accents, ranking numbers (`#1`, `#2`, `#3`).
 - **📊 Thread-Safe Persistent Database:** Built with asynchronous `aiosqlite` schema layers to securely handle server actions without causing database locks or halting runtime functions.
 - **💬 Intelligent Social Filtration:** Automatically responds to greetings like "Hi" and "Bye" for human members, blocks recursive bot-to-bot greeting loops, and auto-purges rapid-fire user message duplication.
 - **🛠️ Dynamic Prefix Environment Configuration:** Programmed to automatically pick up configuration traits from your environment `.env` file. Supports cross-case functionality seamlessly for lowercase/uppercase parsing matching standard styles natively.
@@ -97,7 +97,7 @@ Command         →        Description
 `level`          →       Displays users' current Level, total XP, and remaining XP needed for the next level. You can also mention someone (e.g., !level @User) to check their stats!
 
 ---
-`ls`/`levelstats`     →       Displays the top 10 highest-level users _only_ in the server where the command is typed.
+`sls`/`serverlevelstats`     →       Displays the top 10 highest-level users _only_ in the server where the command is typed.
 
 ---
 `gls`/`globallevelstats` → Displays the top 10 highest-level users across _all_ servers the bot resides in.
@@ -135,4 +135,4 @@ Command         →        Description
 - [x] Program spiritual retrieval mechanics (`revive`) updating active roles and nicknames on-the-fly.
 - [x] Implement mathematical XP progression tracking and persistent text rank mechanics.
 - [ ] Implement integrated inventory items and an analytical economy structure.
-- [x] Implement `Level`, `Levelstats` (`ls`/`Ls`), `GlobalLevelstats` (`gls`/`Gls`)
+- [x] Implement `Level`, `ServerLevelstats` (`sls`/`Sls`), `GlobalLevelstats` (`gls`/`Gls`)
