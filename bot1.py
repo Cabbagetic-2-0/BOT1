@@ -378,8 +378,8 @@ async def level(ctx, target: discord.Member = None):
     await ctx.send(embed=embed)
 
 
-@bot.command(name="ls", aliases=["Ls", "levelstats", "Levelstats"])
-async def local_leaderboard(ctx):
+@bot.command(name="sls", aliases=["Sls", "serverlevelstats", "ServerLevelstats"])
+async def server_statusboard(ctx):
     """Displays the Top 10 users in the local server."""
     async with aiosqlite.connect("bot_stats.db") as db:
         async with db.execute(
@@ -406,8 +406,8 @@ async def local_leaderboard(ctx):
     await ctx.send(embed=embed)
 
 
-@bot.command(name="gls", aliases=["Gls", "globallevelstats", "Globallevelstats"])
-async def global_leaderboard(ctx):
+@bot.command(name="gls", aliases=["Gls", "globallevelstats", "GlobalLevelstats"])
+async def global_statusboard(ctx):
     """Displays the Top 10 users globally across all servers."""
     async with aiosqlite.connect("bot_stats.db") as db:
         async with db.execute(
@@ -433,7 +433,7 @@ async def global_leaderboard(ctx):
 @bot.command(name="help", aliases=["Help"])
 async def help(ctx):
     embed = discord.Embed(title="🤖 Bot Command Menu", description="Here is everything I can do!", color=discord.Color.green())
-    embed.add_field(name="💬 Social & Leveling", value=f"• Say **Hi** or **Bye**\n• `{BOT_PREFIX}level`: View XP profile.\n• `{BOT_PREFIX}ls`: Server Level Statusboard.\n• `{BOT_PREFIX}gls`: Global Level Statusboard.", inline=False)
+    embed.add_field(name="💬 Social & Leveling", value=f"• Say **Hi** or **Bye**\n• `{BOT_PREFIX}level`: View XP profile.\n• `{BOT_PREFIX}sls`: Server Level Statusboard.\n• `{BOT_PREFIX}gls`: Global Level Statusboard.", inline=False)
     embed.add_field(name="🍖 Pet System", value=f"• `{BOT_PREFIX}status`: Check health/hunger.\n• `{BOT_PREFIX}feed <food>`: Give me a snack!\n• `{BOT_PREFIX}revive`: Break out of ghost mode 👻", inline=False)
     embed.add_field(name="🛠️ Utility", value=f"• `{BOT_PREFIX}ping`: Latency.\n• `{BOT_PREFIX}uptime`: Online length.\n• `{BOT_PREFIX}battery`: Host device status.\n• `{BOT_PREFIX}purge / {BOT_PREFIX}restart / {BOT_PREFIX}stop`: Admin commands.", inline=False)
     embed.set_footer(text="Requested by " + ctx.author.name)
