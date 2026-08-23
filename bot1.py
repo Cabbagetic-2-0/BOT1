@@ -392,7 +392,7 @@ async def local_leaderboard(ctx):
         return await ctx.send("📉 No level stats available for this server yet!")
 
     embed = discord.Embed(
-        title=f"🏆 Server Level Leaderboard ({ctx.guild.name})", 
+        title=f"🏆 Server Level Statusboard ({ctx.guild.name})", 
         color=discord.Color.gold()
     )
     description = ""
@@ -418,7 +418,7 @@ async def global_leaderboard(ctx):
     if not top_users:
         return await ctx.send("📉 No global level stats available yet!")
 
-    embed = discord.Embed(title="🌍 Global Level Leaderboard", color=discord.Color.purple())
+    embed = discord.Embed(title="🌍 Global Level Statusboard", color=discord.Color.purple())
     description = ""
 
     for index, (user_id, lvl, xp) in enumerate(top_users, start=1):
@@ -432,8 +432,8 @@ async def global_leaderboard(ctx):
 
 @bot.command(name="help", aliases=["Help"])
 async def help(ctx):
-    embed = discord.Embed(title="🤖 Bot Command Menu", description="Here is everything I can do!", color=discord.Color.yellow())
-    embed.add_field(name="💬 Social & Leveling", value=f"• Say **Hi** or **Bye**\n• `{BOT_PREFIX}level`: View XP profile.\n• `{BOT_PREFIX}ls`: Server Leaderboard.\n• `{BOT_PREFIX}gls`: Global Leaderboard.", inline=False)
+    embed = discord.Embed(title="🤖 Bot Command Menu", description="Here is everything I can do!", color=discord.Color.green())
+    embed.add_field(name="💬 Social & Leveling", value=f"• Say **Hi** or **Bye**\n• `{BOT_PREFIX}level`: View XP profile.\n• `{BOT_PREFIX}ls`: Server Level Statusboard.\n• `{BOT_PREFIX}gls`: Global Level Statusboard.", inline=False)
     embed.add_field(name="🍖 Pet System", value=f"• `{BOT_PREFIX}status`: Check health/hunger.\n• `{BOT_PREFIX}feed <food>`: Give me a snack!\n• `{BOT_PREFIX}revive`: Break out of ghost mode 👻", inline=False)
     embed.add_field(name="🛠️ Utility", value=f"• `{BOT_PREFIX}ping`: Latency.\n• `{BOT_PREFIX}uptime`: Online length.\n• `{BOT_PREFIX}battery`: Host device status.\n• `{BOT_PREFIX}purge / {BOT_PREFIX}restart / {BOT_PREFIX}stop`: Admin commands.", inline=False)
     embed.set_footer(text="Requested by " + ctx.author.name)
