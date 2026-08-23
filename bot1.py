@@ -15,7 +15,7 @@ load_dotenv()
 start_time = time.time()
 TRUSTED_USERS = [int(i) for i in os.getenv("TRUSTED_USERS", "").split(",") if i]
 
-# Dynamically pull the prefix from the .env file. Defaults to '!' if missing.
+# Dynamically pull prefix from .env. Defaults to '!' if missing.
 BOT_PREFIX = os.getenv("COMMAND_PREFIX", "!")
 
 intents = discord.Intents.default()
@@ -25,7 +25,7 @@ bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents, help_command=None
 # How fast the bot gets hungry (in seconds)
 HUNGER_DECAY_INTERVAL = 1800
 
-# Track the last message content for each channel to prevent "In a row" duplicates
+# Track last message content for each channel to prevent "In a row" duplicates
 last_message_content = {}
 last_author_id = {}
 
@@ -38,7 +38,6 @@ async def get_bot_status():
         async with db.execute("SELECT health, hunger, is_ghost FROM bot_stats WHERE id = 1") as cursor:
             res = await cursor.fetchone()
             if res:
-                # Provide a fallback to 100 or 0 if any individual column is None
                 return {
                     "health": res[0] if res[0] is not None else 100, 
                     "hunger": res[1] if res[1] is not None else 100, 
@@ -48,7 +47,6 @@ async def get_bot_status():
 
 async def update_bot_status(hunger_level, health=None, is_ghost=None):
     """Updates the bot's database stats via aiosqlite AND changes its Discord status text."""
-    # Safety Check: If hunger_level itself comes back as None, default to 100
     if hunger_level is None:
         hunger_level = 100
 
@@ -69,7 +67,6 @@ async def update_bot_status(hunger_level, health=None, is_ghost=None):
         )
         await db.commit()
 
-    # 2. Change Discord Rich Presence text based on status safely
     if is_ghost == 1:
         status_text = f"Spooking the server... 👻 | {BOT_PREFIX}revive"
         activity_type = discord.ActivityType.playing
@@ -85,14 +82,17 @@ async def update_bot_status(hunger_level, health=None, is_ghost=None):
 
     await bot.change_presence(activity=discord.Activity(type=activity_type, name=status_text))
 
-async def add_user_xp(user_id, xp_to_add):
-    """Grants XP to users dynamically using an async database loop."""
+async def add_user_xp(user_id, guild_id, xp_to_add):
+    """Grants XP to users dynamically using an async database loop, saving guild_id."""
     async with aiosqlite.connect("bot_stats.db") as db:
         async with db.execute("SELECT xp, level FROM user_xp WHERE user_id = ?", (user_id,)) as cursor:
             res = await cursor.fetchone()
         
         if not res:
-            await db.execute("INSERT INTO user_xp (user_id, xp, level) VALUES (?, ?, ?)", (user_id, xp_to_add, 1))
+            await db.execute(
+                "INSERT INTO user_xp (user_id, guild_id, xp, level) VALUES (?, ?, ?, ?)", 
+                (user_id, guild_id, xp_to_add, 1)
+            )
             await db.commit()
             return False 
             
@@ -107,7 +107,10 @@ async def add_user_xp(user_id, xp_to_add):
             current_level += 1
             leveled_up = True
             
-        await db.execute("UPDATE user_xp SET xp = ?, level = ? WHERE user_id = ?", (current_xp, current_level, user_id))
+        await db.execute(
+            "UPDATE user_xp SET xp = ?, level = ?, guild_id = ? WHERE user_id = ?", 
+            (current_xp, current_level, guild_id, user_id)
+        )
         await db.commit()
         return leveled_up
 
@@ -138,15 +141,23 @@ async def on_ready():
         await db.execute('''
             CREATE TABLE IF NOT EXISTS user_xp (
                 user_id INTEGER PRIMARY KEY, 
+                guild_id INTEGER,
                 xp INTEGER DEFAULT 0, 
                 level INTEGER DEFAULT 1
             )
         ''')
+        
+        # Safely attempt schema alterations for existing DBs
         try:
             await db.execute("ALTER TABLE bot_stats ADD COLUMN is_ghost BOOLEAN DEFAULT 0")
-            print("✅ Successfully injected 'is_ghost' column into database!")
         except aiosqlite.OperationalError:
             pass
+            
+        try:
+            await db.execute("ALTER TABLE user_xp ADD COLUMN guild_id INTEGER")
+        except aiosqlite.OperationalError:
+            pass
+            
         await db.commit()
     print("✨ Database schemas verified and updated automatically!")
 
@@ -155,7 +166,6 @@ async def on_ready():
 
     print(f'✅ Logged in as {bot.user.name}. Everything is loaded and ready for action!')
 
-    # Safety-focused pull directly on initialization
     async with aiosqlite.connect("bot_stats.db") as db:
         async with db.execute("SELECT hunger, is_ghost FROM bot_stats WHERE id = 1") as cursor:
             row = await cursor.fetchone()
@@ -180,7 +190,6 @@ async def hunger_decay():
 
         async with db.execute("SELECT hunger, health FROM bot_stats WHERE id = 1") as cursor:
             row = await cursor.fetchone()
-            # Absolute safety fallbacks to prevent NoneType errors
             new_hunger = row[0] if (row and row[0] is not None) else 100
             current_health = row[1] if (row and row[1] is not None) else 100
 
@@ -214,7 +223,7 @@ async def check_for_death():
 
 @bot.event
 async def on_message(message):
-    if message.author == bot.user:
+    if message.author == bot.user or not message.guild:
         return
 
     stats = await get_bot_status()
@@ -227,7 +236,7 @@ async def on_message(message):
         return
 
     # ⭐ ALIVE: RUN CONTEXT SYSTEM FEATURES ⭐
-    did_level_up = await add_user_xp(message.author.id, 5)
+    did_level_up = await add_user_xp(message.author.id, message.guild.id, 5)
     if did_level_up:
         async with aiosqlite.connect("bot_stats.db") as db:
             async with db.execute("SELECT level FROM user_xp WHERE user_id = ?", (message.author.id,)) as cursor:
@@ -264,7 +273,7 @@ async def on_message(message):
     await bot.process_commands(message)
 
 
-# --- 🧪 BOT COMMANDS (With automatic Case-Insensitivity via aliases) 🧪 ---
+# --- 🧪 BOT COMMANDS 🧪 ---
 
 @bot.command(name="ping", aliases=["Ping"])
 async def ping(ctx):
@@ -287,7 +296,6 @@ async def purge(ctx, amount: int):
 
 @bot.command(name="status", aliases=["Status"])
 async def status(ctx):
-    """Checks the bot's current health and hunger."""
     stats = await get_bot_status()
     h = "❤️" if stats["health"] > 50 else "💔"
     f = "🍖" if stats["hunger"] > 50 else "🦴"
@@ -299,7 +307,6 @@ async def status(ctx):
 
 @bot.command(name="feed", aliases=["Feed"])
 async def feed(ctx, item: str):
-    """Feed the bot to increase hunger and heal it."""
     stats = await get_bot_status()
     new_hunger = min(100, stats["hunger"] + 20)
     new_health = stats["health"]
@@ -337,24 +344,96 @@ async def battery(ctx):
 async def revive(ctx):
     stats = await get_bot_status()
     if stats["is_ghost"] == 1:
-        # 1. Update the database state to alive
         await update_bot_status(hunger_level=20, health=10, is_ghost=0)
-        
-        # 2. Loop through EVERY server the bot is in and restore its name!
         for guild in bot.guilds:
             try:
-                await guild.me.edit(nick=bot.user.name)
+                await guild.me.edit(nick=bot.user.name) 
             except Exception as e:
-                print(f"Couldn't change nickname back in guild {guild.id}: {e}")
-                
-        await ctx.send("✨ **HEALED GLOBAL ACTION!** I have returned from the spirit world. My life has been restored across all servers! My health is at 10💔 and my hunger is at 20🍗. Feed me quick!")
+                print(f"Couldn't change nickname in guild {guild.id}: {e}")
+        await ctx.send("✨ **HEALED GLOBAL ACTION!** I have returned from the spirit world. My health is at 10💔 and my hunger is at 20🍗. Feed me quick!")
     else:
-        await ctx.send(f"❤️ I'm still alive and kicking! Current Health: {stats['health']}/100")
+        await ctx.send(f"❤️ I'm still alive and kicking! Current Health: {stats['health']}")
+
+
+# --- 📊 NEW LEVEL & LEADERBOARD SYSTEM COMMANDS 📊 ---
+
+@bot.command(name="level", aliases=["Level"])
+async def level(ctx, target: discord.Member = None):
+    """Checks the user's current level and XP statistics."""
+    user = target or ctx.author
+    async with aiosqlite.connect("bot_stats.db") as db:
+        async with db.execute("SELECT xp, level FROM user_xp WHERE user_id = ?", (user.id,)) as cursor:
+            res = await cursor.fetchone()
+
+    if not res:
+        return await ctx.send(f"📊 **{user.display_name}** hasn't earned any XP yet! Start chatting to earn XP.")
+
+    current_xp, current_level = res[0], res[1]
+    xp_needed = current_level * 100
+
+    embed = discord.Embed(title=f"📊 XP Profile - {user.display_name}", color=discord.Color.blue())
+    embed.set_thumbnail(url=user.display_avatar.url)
+    embed.add_field(name="⭐ Level", value=f"**{current_level}**", inline=True)
+    embed.add_field(name="✨ Progress XP", value=f"`{current_xp} / {xp_needed} XP`", inline=True)
+    await ctx.send(embed=embed)
+
+
+@bot.command(name="ls", aliases=["Ls", "levelstats", "Levelstats"])
+async def local_leaderboard(ctx):
+    """Displays the Top 10 users in the local server."""
+    async with aiosqlite.connect("bot_stats.db") as db:
+        async with db.execute(
+            "SELECT user_id, level, xp FROM user_xp WHERE guild_id = ? ORDER BY level DESC, xp DESC LIMIT 10", 
+            (ctx.guild.id,)
+        ) as cursor:
+            top_users = await cursor.fetchall()
+
+    if not top_users:
+        return await ctx.send("📉 No level stats available for this server yet!")
+
+    embed = discord.Embed(
+        title=f"🏆 Server Level Leaderboard ({ctx.guild.name})", 
+        color=discord.Color.gold()
+    )
+    description = ""
+
+    for index, (user_id, lvl, xp) in enumerate(top_users, start=1):
+        member = ctx.guild.get_member(user_id)
+        name = member.display_name if member else f"User ID: {user_id}"
+        description += f"**#{index}** • **{name}** — Level **{lvl}** (`{xp} XP`)\n"
+
+    embed.description = description
+    await ctx.send(embed=embed)
+
+
+@bot.command(name="gls", aliases=["Gls", "globallevelstats", "Globallevelstats"])
+async def global_leaderboard(ctx):
+    """Displays the Top 10 users globally across all servers."""
+    async with aiosqlite.connect("bot_stats.db") as db:
+        async with db.execute(
+            "SELECT user_id, level, xp FROM user_xp ORDER BY level DESC, xp DESC LIMIT 10"
+        ) as cursor:
+            top_users = await cursor.fetchall()
+
+    if not top_users:
+        return await ctx.send("📉 No global level stats available yet!")
+
+    embed = discord.Embed(title="🌍 Global Level Leaderboard", color=discord.Color.purple())
+    description = ""
+
+    for index, (user_id, lvl, xp) in enumerate(top_users, start=1):
+        user = bot.get_user(user_id)
+        name = user.display_name if user else f"User ID: {user_id}"
+        description += f"**#{index}** • **{name}** — Level **{lvl}** (`{xp} XP`)\n"
+
+    embed.description = description
+    await ctx.send(embed=embed)
+
 
 @bot.command(name="help", aliases=["Help"])
 async def help(ctx):
     embed = discord.Embed(title="🤖 Bot Command Menu", description="Here is everything I can do!", color=discord.Color.yellow())
-    embed.add_field(name="💬 Social", value=f"• Say **Hi** or **Bye**\n• Tracks user text XP leveling!", inline=False)
+    embed.add_field(name="💬 Social & Leveling", value=f"• Say **Hi** or **Bye**\n• `{BOT_PREFIX}level`: View XP profile.\n• `{BOT_PREFIX}ls`: Server Leaderboard.\n• `{BOT_PREFIX}gls`: Global Leaderboard.", inline=False)
     embed.add_field(name="🍖 Pet System", value=f"• `{BOT_PREFIX}status`: Check health/hunger.\n• `{BOT_PREFIX}feed <food>`: Give me a snack!\n• `{BOT_PREFIX}revive`: Break out of ghost mode 👻", inline=False)
     embed.add_field(name="🛠️ Utility", value=f"• `{BOT_PREFIX}ping`: Latency.\n• `{BOT_PREFIX}uptime`: Online length.\n• `{BOT_PREFIX}battery`: Host device status.\n• `{BOT_PREFIX}purge / {BOT_PREFIX}restart / {BOT_PREFIX}stop`: Admin commands.", inline=False)
     embed.set_footer(text="Requested by " + ctx.author.name)
@@ -362,4 +441,4 @@ async def help(ctx):
 
 # 4. RUN
 bot.run(os.getenv('DISCORD_TOKEN'))
-                                        
+                
