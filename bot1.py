@@ -242,7 +242,12 @@ async def on_message(message):
             async with db.execute("SELECT level FROM user_xp WHERE user_id = ?", (message.author.id,)) as cursor:
                 row = await cursor.fetchone()
                 new_lvl = row[0] if row else 1
-        await message.channel.send(f"🎉 Gg {message.author.mention}, you leveled up to **Level {new_lvl}**!")
+        
+        # SAFELY ATTEMPT TO SEND LEVEL UP MESSAGE
+        try:
+            await message.channel.send(f"🎉 Gg {message.author.mention}, you leveled up to **Level {new_lvl}**!")
+        except discord.Forbidden:
+            pass  # Silently ignore if bot lacks 'Send Messages' permission in this specific channel
 
     words = content.lower().split()
     channel_id = message.channel.id
@@ -262,9 +267,12 @@ async def on_message(message):
                 pass
             return
 
-        await message.channel.send(found_word.capitalize())
-        last_message_content[channel_id] = found_word
-        last_author_id[channel_id] = author_id
+        try:
+            await message.channel.send(found_word.capitalize())
+            last_message_content[channel_id] = found_word
+            last_author_id[channel_id] = author_id
+        except discord.Forbidden:
+            pass
     else:
         if not content.lower().startswith(bot.command_prefix.lower()):
             last_message_content[channel_id] = None
